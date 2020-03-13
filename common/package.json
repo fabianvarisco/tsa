@@ -1,0 +1,33 @@
+{
+  "name": "common",
+  "version": "1.0.0",
+  "description": "common",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --env=node --detectOpenHandles --coverage=true",
+    "benchmark": "node -e 'require(\"./src/stamp.benchmark.js\").run()'",
+    "pretest": "eslint --ignore-path .gitignore .",
+    "lint": "eslint --fix ."
+  },
+  "jest": {
+    "verbose": true,
+    "bail": 1
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "dotenv": "^8.2.0",
+    "fs": "0.0.1-security",
+    "merkletreejs": "^0.1.11",
+    "web3": "^1.2.6"
+  },
+  "devDependencies": {
+    "elapsed-time": "0.0.1",
+    "eslint": "^6.8.0",
+    "eslint-config-strongloop": "^2.1.0",
+    "jest": "^25.1.0",
+    "path": "^0.12.7",
+    "solc": "^0.5.2"
+  }
+}
