@@ -7,7 +7,9 @@
     "test": "jest --env=node --detectOpenHandles --coverage=true",
     "benchmark": "node -e 'require(\"./src/stamp.benchmark.js\").run()'",
     "pretest": "eslint --ignore-path .gitignore .",
-    "lint": "eslint --fix ."
+    "lint": "eslint --fix .",
+    "compile": "node ./src/compile",
+    "deploy": "node ./src/deploy ../../contracts/build/Stamper.compiled.json" 
   },
   "jest": {
     "verbose": true,
@@ -28,6 +30,6 @@
     "eslint-config-strongloop": "^2.1.0",
     "jest": "^25.1.0",
     "path": "^0.12.7",
-    "solc": "^0.5.2"
+    "solc": "0.5.2"
   }
 }
