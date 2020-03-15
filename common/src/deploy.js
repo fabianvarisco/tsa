@@ -48,7 +48,7 @@ async function signedDeploy(web3Setup, compiled) {
     assert(compiled.evm.bytecode);
     assert(compiled.evm.bytecode.object);
 
-    console.log('deploying from account', web3Setup.from, '...');
+    console.log('signed deploying from account', web3Setup.from, '...');
 
     const contract = await  new web3Setup.web3.eth.Contract(compiled.abi);
 
@@ -58,11 +58,12 @@ async function signedDeploy(web3Setup, compiled) {
     }).encodeABI();
 
     const nonce = await web3Setup.web3.eth.getTransactionCount(web3Setup.from);
-    assert(nonce >= 0, 'nonce debe ser mayor o igual que cero');
-    console.log('nonce:', nonce);
+    assert(nonce >= 0, `nonce [${nonce}] must be >= zero`);
+    console.log('> nonce:', nonce);
     
-    const tx = { data: data, gas: 3400000000, nonce: web3Setup.web3.utils.toHex(nonce)};
+    const tx = { data: data, gas: 3400000000, nonce: web3Setup.web3.utils.toHex(nonce), from: web3Setup.from};
     
+    console.log('> walletAccount.address:', web3Setup.walletAccount.address);
     const signedTx = await web3Setup.walletAccount.signTransaction(tx);
 
     console.log('sendSignedTransaction ...');
@@ -88,6 +89,7 @@ async function run() {
   const CONTRACT_JSON_PATH = process.argv[process.argv.length - 1];
   const compiled = require(CONTRACT_JSON_PATH);
   const name = path.parse(CONTRACT_JSON_PATH).name;
+  assert(name);
 
   console.log('deploying', name, 'from', CONTRACT_JSON_PATH);
 
