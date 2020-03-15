@@ -9,7 +9,7 @@
     "pretest": "eslint --ignore-path .gitignore .",
     "lint": "eslint --fix .",
     "compile": "node ./src/compile",
-    "deploy": "node ./src/deploy ../../contracts/build/Stamper.compiled.json" 
+    "deploy-stamper": "node ./src/deploy ../../contracts/build/Stamper064.sol.compiled.json" 
   },
   "jest": {
     "verbose": true,

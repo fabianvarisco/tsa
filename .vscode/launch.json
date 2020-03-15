@@ -4,7 +4,6 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
          {
             "name": "Debug Jest Stamp Tests",
             "type": "node",
@@ -50,7 +49,7 @@
                 "type": "node",
                 "request": "launch",
                 "program": "${workspaceRoot}/common/src/deploy.js",
-                "args": ["${workspaceFolder}/contracts/build/Stamper.json"],
+                "args": ["${workspaceFolder}/contracts/build/Stamper064.sol.compiled.json"],
                 "envFile": "${workspaceFolder}/common/.env",
                 "smartStep": true
             },
