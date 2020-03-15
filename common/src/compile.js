@@ -4,9 +4,18 @@
 
 require('dotenv').config();
 const fs = require('fs-extra');
-const solc = require('solc');
 const path = require('path');
 const assert = require('assert');
+
+function loadSolc(version) {
+  const LoadSolcPath = path.resolve('..', 'contracts', 'solc.'+version, 'index.js');
+  return require(LoadSolcPath).solc();
+}
+
+const SOLCS = [
+  { regExp: /^pragma solidity \^?0.5.2;/m, solc: loadSolc('0.5.2') },
+  { regExp: /^pragma solidity \^?0.6.4;/m, solc: loadSolc('0.6.4') },
+]
 
 console.log('process.env.CONTRACTS_BUILD_PATH', process.env.CONTRACTS_BUILD_PATH);
 console.log('process.env.CONTRACTS_SRC_PATH', process.env.CONTRACTS_SRC_PATH);
@@ -15,24 +24,33 @@ const buildPath = process.env.CONTRACTS_BUILD_PATH;
 const scrPath = process.env.CONTRACTS_SRC_PATH;
 
 async function buildSources() {
-  const sources = {};
+  const sources = [];
   const files = fs.readdirSync(scrPath);
   assert(files[0], 'sources not found');
 
   files.forEach(file => {
     const fullPath = path.resolve(scrPath, file);
-    sources[file] = {
-      content: fs.readFileSync(fullPath, 'utf8'),
-    };
+    sources.push({name:file, content:fs.readFileSync(fullPath, 'utf8')});
+
+//    source[file] = {
+//      content: fs.readFileSync(fullPath, 'utf8'),
+//    };
   });
 
   return sources;
 }
 
-async function compileContracts() {
+async function compileOne(source) {
+  const name = source.name;
+  const content = source.content;
+  console.log(`\nprocessing contract ${name}`);
+
+  const sources = {};
+  sources[name] = { content: content };
+
   const input = {
     language: 'Solidity',
-    sources: await buildSources(),
+    sources: sources,
     settings: {
       outputSelection: {
         '*': {
@@ -42,31 +60,42 @@ async function compileContracts() {
     },
   };
 
-  console.log('solc version:', solc.semver());
+  var solc;
+  for (var s of SOLCS) {    
+    if (content.match(s.regExp)) {
+      solc = s.solc;
+      break;
+    }
+  }
+  assert(solc, `solc version not found for source ${name}`);
+  console.log('solc:', solc.semver());
 
   const result = JSON.parse(solc.compile(JSON.stringify(input)));
 
   if (result.errors) {
-    console.log(result.errors);
+    console.error('solc errors:');
+    console.error(result.errors);
     return;
   }
+  
+  console.log(result.contracts[name]);
+  const contract = Object.values(result.contracts[name])[0];
+  assert(contract);
+  assert(contract.abi);
 
-  const contracts = result.contracts;
-
-  console.log(contracts);
-  // assert(contracts.length > 0, "empty contracts");
-
-  for (var contract in contracts) {
-    for (var name in contracts[contract]) {
-      const full = path.resolve(buildPath, `${name}.compiled.json`);
-      const abi = path.resolve(buildPath, `${name}.abi.json`);
-      console.log('writing', full, '...');
-      fs.outputJsonSync(full, contracts[contract][name], { spaces: 2 });
-      console.log('writing', abi, '...');
-      fs.outputJsonSync(abi, contracts[contract][name].abi, { spaces: 2 });
-    }
-  }
+  const fullPath = path.resolve(buildPath, `${name}.compiled.json`);
+  const abiPath = path.resolve(buildPath, `${name}.abi.json`);
+  console.log('writing', fullPath, '...');
+  fs.outputJsonSync(fullPath, contract, { spaces: 2 });
+  console.log('writing', abiPath, '...');
+  fs.outputJsonSync(abiPath, contract.abi, { spaces: 2 });
   console.log('compiling OK !!!');
 }
 
-compileContracts();
+async function run() {
+  const sources = await buildSources();
+
+  for (var s of sources) await compileOne(s);
+}
+
+run();
