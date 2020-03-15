@@ -17,6 +17,8 @@ async function setup() {
     const isListening = await web3.eth.net.isListening();
     const netId = await web3.eth.net.getId();
 
+    console.log('> nodeInfo:', await web3.eth.getNodeInfo());
+    console.log('> web3.version:', web3.version);
     console.log('> netId:', netId);
     console.log('> isListening():', isListening);
 
