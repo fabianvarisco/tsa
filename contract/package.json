@@ -1,0 +1,20 @@
+{
+  "name": "tsa2-contract",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^1.0.29",
+    "truffle-hdwallet-provider": "^1.0.9"
+  },
+  "scripts": {
+    "compile-all": "./node_modules/.bin/truffle compile --all",
+    "deploy-reset-geth": "./node_modules/.bin/truffle migrate --network geth --reset",
+    "deploy-reset-besu": "./node_modules/.bin/truffle migrate --network besu --reset"
+  },
+  "devDependencies": {
+    "truffle": "^5.1.23"
+  }
+}

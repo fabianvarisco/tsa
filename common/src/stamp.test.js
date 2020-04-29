@@ -1,132 +1,102 @@
 'use strict';
 
 require('dotenv').config();
-const w3h = require('./web3Helper.js');
-const ch = require('./contractHelper.js');
-const Stamper = require('./Stamper.js');
-const tvh = require('./treeVerifyHelper.js');
 const hh = require('./hashHelper.js');
-const benchmark = require('./stamp.benchmark.js');
 const mock = require('./mock.js');
-const dao = require('../../db/src/stampRequestDAO.js');
 
-const privateKey = process.env.ACCOUNT_PKEY;
-var dbPool;
+const TIMEOUT = 100000;
 
-async function makeStamper() {
-  const w3hs = await w3h.setup();
-  const contract = await ch.setup(w3hs);
-  return new Stamper(w3hs, contract);
-}
+var stamper;
 
-beforeAll(() => {
-  dao.initPool().then(x => { dbPool = x; });
-});
+beforeAll(async() => {
+  const Stamper = require('./Stamper.js');
+  stamper = await Stamper.build();
+}, TIMEOUT);
 
-test.only('stamp twice the same object', async() => {
-  const hashes = mock.randomHexArray(1);
+test('stamp and verify an object', async() => {
+  const text = String(Date.now());
+  const hash = hh.digester(text).toString('hex');
+  console.log(`stamping hash [${hh.ALGO}] [${hash}] from [${text}] ...`);
 
-  process.env.ACCOUNT_PKEY = privateKey;
-  const stamper = await makeStamper();
-
-  const result = (await stamper.stamp(hashes))[0];
+  const result = (await stamper.stamp(hash))[0];
   expect(result.status).toBe('stamped');
-  console.log(result);
 
-  const result2 = (await stamper.stamp(hashes))[0];
+  const result2 = await stamper.verify(hash);
+  expect(result2.stamped).toBeTruthy();
   console.log(result2);
 
-  expect(result2.status).toBe('already_stamped_by_this_TSA');
+  expect(result2.stamps[0].blocknumber).toBe(result.block);
+  expect(result2.stamps[0].whostamped).toBe(stamper.defaultAccount);
+  expect(result2.stamps[0].netid).toBe(stamper.netId);
+  expect(result2.stamps[0].hashalgo).toBe(hh.ALGO);
+}, TIMEOUT);
+
+test('stamp twice the same object', async() => {
+  const hash = mock.randomHex();
+
+  const result = (await stamper.stamp(hash))[0];
+  expect(result.status).toBe('stamped');
+
+  const result2 = (await stamper.stamp([hash]))[0];
   expect(result2.hash).toBe(result.hash);
   expect(result2.txHash).toBe(result.txHash);
   expect(result2.block).toBe(result.block);
-}, 20000000);
+  expect(result2.status).toBe('already_stamped_by_this_TSA');
 
-test('verify without a private key', async() => {
-  const hashes = mock.randomHexArray(1);
+  expect(await stamper.getObjectCount(hash)).toBe(1);
+}, TIMEOUT);
 
-  process.env.ACCOUNT_PKEY = privateKey;
-  var stamper = await makeStamper();
+test('stamp twice the same object - check false', async() => {
+  const hash = mock.randomHex();
 
-  const result = (await stamper.stamp(hashes))[0];
+  const initCount = await stamper.getStamperCount(stamper.defaultAccount);
+
+  const result = (await stamper.stamp(hash))[0];
   expect(result.status).toBe('stamped');
 
-  process.env.ACCOUNT_PKEY = '';
-  stamper = await makeStamper();
+  const result2 = (await stamper.stamp([hash], false))[0];
+  expect(result2.hash).toBe(result.hash);
+  expect(result2.txHash).not.toBe(result.txHash);
+  expect(result2.block).not.toBe(result.block);
+  expect(result2.status).toBe('stamped');
 
-  const result2 = await stamper.verify(hashes[0]);
-  expect(result2.stamps[0].blocknumber).toBe(result.block);
-  expect(result2.stamps[0].whostamped).toBe(stamper.from);
-}, 10000);
+  expect(await stamper.getObjectCount(hash)).toBe(2);
+
+  const finalCount = await stamper.getStamperCount(stamper.defaultAccount);
+  expect(finalCount).toBe(initCount + 2);
+
+  const stampListPos1 = await stamper.getObjectPos(hash, 0);
+  expect(stampListPos1).toBeGreaterThan(0);
+  const stampListPos2 = await stamper.getObjectPos(hash, 1);
+  expect(stampListPos2).toBeGreaterThan(stampListPos1);
+
+  const stamp1 = await stamper.getStamplistPos(stampListPos1);
+  const stamp2 = await stamper.getStamplistPos(stampListPos2);
+
+  expect(stamp1['0']).toBe(hash);
+  expect(stamp2['0']).toBe(hash);
+
+  expect(stamp1['1']).toBe(stamper.defaultAccount);
+  expect(stamp2['1']).toBe(stamper.defaultAccount);
+
+  expect(parseInt(stamp2['2'], 10)).toBeGreaterThan(parseInt(stamp1['2'], 10), 'second stamp block >= first stamp block');
+}, TIMEOUT);
 
 test('verify an unstamped object', async() => {
-  process.env.ACCOUNT_PKEY = privateKey;
-  const stamper = await makeStamper();
+  console.log('running >> verify an unstamped object ...');
 
-  const result = await stamper.verify(mock.randomHexArray(1));
+  const result = await stamper.verify(mock.randomHex());
 
   expect(result.stamped).toBeFalsy();
-}, 10000);
+}, TIMEOUT);
 
 test('wait1block', async() => {
-  process.env.ACCOUNT_PKEY = privateKey;
-  const web3 = (await w3h.setup()).web3;
+  const web3h = require('./web3Helper.js');
+  const ctx = await web3h.setup();
 
-  const blocknumber1 = await w3h.wait1block(web3);
-  const blocknumber2 = await w3h.wait1block(web3);
+  const blocknumber1 = await web3h.wait1Block(ctx);
+  const blocknumber2 = await web3h.wait1Block(ctx);
 
   expect(blocknumber1).toBeGreaterThan(1);
   expect(blocknumber2).toBeGreaterThan(blocknumber1);
-}, 10000);
-
-test('stamp a tree and verify all leaves', async() => {
-  const TREE_LEAVES_COUNT = 10;
-  const leaves = mock.randomHexArray(TREE_LEAVES_COUNT);
-
-  process.env.ACCOUNT_PKEY = privateKey;
-  const stamper = await makeStamper();
-
-  const tree = (await mock.stampTree(dao, stamper, leaves)).tree;
-
-  // merkletreejs proof verification
-  const treeResult = [];
-  for (var leave of leaves) treeResult.push(await tvh.verify(stamper, leave));
-
-  console.log('verifying results ...');
-  var oks = 0;
-  const resultTable = [];
-  for (var x of treeResult) {
-    var t = x.stamps[0].tree;
-    resultTable.push({leave: t.leave, proofSize: t.proof.length, stamped: x.stamped});
-    if (x.stamped) oks++;
-  };
-
-  console.table(resultTable.sort((a, b) => a.leave > b.leave ? 1 : -1));
-
-  expect(oks).toBe(TREE_LEAVES_COUNT);
-
-  // local proof verification
-  var hash;
-  treeResult.forEach(function(x) {
-    const t = x.stamps[0].tree;
-    hash = hh.hexToBuffer(t.leave);
-    for (var item of t.proof) {
-      const pairs = [];
-      const data = hh.hexToBuffer(item);
-      if (Buffer.compare(hash, data) === -1) {
-        pairs.push(hash, data);
-      } else {
-        pairs.push(data, hash);
-      }
-      hash = hh.digester(Buffer.concat(pairs));
-    }
-    hash = hh.bufferToHex(hash);
-
-    expect(tree.getHexRoot()).toBe(hash);
-  });
-
-}, 200000);
-
-test('benchmark', async() => {
-  await benchmark.run(dbPool, [10, 30], 5, 5);
-}, 200000);
+}, TIMEOUT);

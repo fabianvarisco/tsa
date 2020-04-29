@@ -27,7 +27,7 @@ esac
 export GETH_ACCOUNT_JSON=$( ls -1 ${modedir}/node/keystore/UTC* | head -1 )
 export GETH_ACCOUNT_PASSWORD=""
 export GETH_HOST=http://localhost:8545
-export CONTRACT_ABI_PATH="${PWD}/abi.xxx.json"
+export CONTRACT_ABI_PATH="${PWD}/abi.json"
 
 # roll logs
 higher=10

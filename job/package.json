@@ -1,0 +1,22 @@
+{
+  "name": "job",
+  "version": "1.0.0",
+  "description": "job",
+  "main": "src/job.js",
+  "scripts": {
+    "test-11": "JOB_MAIN=false TEST_SIZE=11 JOB_MAX_TIMES=10 node src/job.test.js",
+    "test": "jest --env=node --detectOpenHandles --coverage=false",
+    "pretest": "eslint --ignore-path .gitignore ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "sleep": "^6.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-strongloop": "^2.1.0",
+    "jest": "^25.1.0"
+  }
+}

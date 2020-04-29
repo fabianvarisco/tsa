@@ -1,11 +1,11 @@
-import express          from 'express'
-import cors             from 'cors'
-import bodyParser       from 'body-parser'
-import basicAuth        from 'express-basic-auth'
+var express = require('express');
+var cors = require('cors');
+var bodyParser = require('body-parser');
+var basicAuth = require('express-basic-auth');
 
-import 'dotenv/config'
-const web3Helper = require("../../common/src/web3Helper.js")
-const dao = require("../../db/src/stampRequestDAO.js")
+require('dotenv').config();
+const web3Helper = require("../../common/src/web3Helper.js");
+const dao = require('../../db/src/stampRequestDAO.js');
 
 var web3Config
 

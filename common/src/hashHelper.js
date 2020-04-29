@@ -5,7 +5,7 @@
 const crypto = require('crypto');
 const { MerkleTree } = require('merkletreejs');
 
-const ALGO = 'sha256';
+const ALGO = process.env.HASH_ALGORITHM || 'sha256';
 
 const treeOptions = {
   duplicateOdd: false,
@@ -34,10 +34,26 @@ function makeTree(leaves) {
   }
 }
 
+function makeHexRoot(leave, proof, algo) {
+  var root = hexToBuffer(leave);
+  for (var item of proof) {
+    const pairs = [];
+    const data = hexToBuffer(item);
+    if (Buffer.compare(root, data) === -1) {
+      pairs.push(root, data);
+    } else {
+      pairs.push(data, root);
+    }
+    root = crypto.createHash(algo).update(Buffer.concat(pairs)).digest();
+  }
+  return bufferToHex(root);
+}
+
 module.exports = {
   ALGO: ALGO,
   digester: digester,
   bufferToHex: bufferToHex,
   hexToBuffer: hexToBuffer,
   makeTree: makeTree,
+  makeHexRoot,
 };

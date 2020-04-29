@@ -1,10 +1,11 @@
 'use strict';
 
 const hh = require('./hashHelper.js');
-const web3 = require('web3');
+const web3h = require('./web3Helper.js');
+const assert = require('assert');
 
 function randomHex() {
-  return web3.utils.randomHex(32);
+  return web3h.randomHex();
 }
 
 function randomHexArray(size) {
@@ -14,17 +15,18 @@ function randomHexArray(size) {
 }
 
 async function stampTree(dao, stamper, leaves) {
-  const tree = await prepareTree(dao, leaves);
-  const root = tree.getHexRoot();
+  assert(dao);
+  assert(stamper);
+  assert(leaves);
 
-  const result = (await stamper.stamp([root]))[0];
+  const tree = await prepareTree(dao, leaves);
+
+  const result = (await stamper.stamp(tree.getHexRoot()))[0];
   expect(result.status).toBe('stamped');
 
-  console.log(`updating ${leaves.length} leaves into db ...`);
-  const rowsToUpdate = leaves.map(x => ({txHash: result.txHash, block: result.block, hash: x, treeRoot: root}));
-  await dao.updateStampResult(stamper.netId, stamper.address, stamper.from, rowsToUpdate);
+  await dbPostStampTree(dao, stamper, tree, result);
 
-  return {tree: tree, stampRootResult: result};
+  return tree;
 }
 
 async function prepareTree(dao, leaves) {
@@ -33,9 +35,18 @@ async function prepareTree(dao, leaves) {
   return hh.makeTree(leaves);
 }
 
+async function dbPostStampTree(dao, stamper, tree, stampResult) {
+  const root = tree.getHexRoot();
+  const leaves = tree.getLeaves().map(x => hh.bufferToHex(x));
+  console.log(`updating ${leaves.length} leaves into db ...`);
+  const rowsToUpdate = leaves.map(x => ({txHash: stampResult.txHash, block: stampResult.block, hash: x, treeRoot: root}));
+  await dao.updateStampResult(stamper.netId, stamper.contractAddress, stamper.defaultAccount, rowsToUpdate);
+}
+
 module.exports = {
   randomHex: randomHex,
   randomHexArray: randomHexArray,
   stampTree: stampTree,
   prepareTree: prepareTree,
+  dbPostStampTree: dbPostStampTree,
 };

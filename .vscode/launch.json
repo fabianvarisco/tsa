@@ -68,6 +68,16 @@
                 "program": "${workspaceRoot}/common/src/stamp.benchmark.js",
                 "envFile": "${workspaceFolder}/common/.env",
                 "smartStep": true
+            },
+            {
+                "name": "job-test",
+                "type": "node",
+                "request": "launch",
+                "program": "${workspaceRoot}/job/src/job-test.js",
+                "envFile": "${workspaceFolder}/job/.env",
+                "env": { "JOB_MAIN":"false", "TEST_SIZE":"120" },
+                "smartStep": true
             }
+
         ]
 }

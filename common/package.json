@@ -2,34 +2,31 @@
   "name": "common",
   "version": "1.0.0",
   "description": "common",
-  "main": "index.js",
+  "main": "src/web3Helper.js",
   "scripts": {
-    "test": "jest --env=node --detectOpenHandles --coverage=true",
+    "test": "jest --env=node --detectOpenHandles --coverage=false",
     "benchmark": "node -e 'require(\"./src/stamp.benchmark.js\").run()'",
-    "pretest": "eslint --ignore-path .gitignore .",
-    "lint": "eslint --fix .",
-    "compile": "node ./src/compile",
-    "deploy-stamper": "node ./src/deploy ../../contracts/build/Stamper064.sol.compiled.json" 
+    "pretest": "eslint --ignore-path .gitignore ."
   },
   "jest": {
-    "verbose": true,
-    "bail": 1
+    "verbose": false,
+    "bail": 1,
+    "maxConcurrency": 1,
+    "errorOnDeprecated": true,
+    "testMatch": [ "**/*.test.js" ]
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "crypto": "^1.0.1",
-    "dotenv": "^8.2.0",
-    "fs": "0.0.1-security",
-    "merkletreejs": "^0.1.11",
-    "web3": "^1.2.6"
+    "fs": "^0.0.1-security",
+    "merkletreejs": "^0.1.7",
+    "web3": "^1.2.5",
+    "dotenv": "^8.2.0"
   },
   "devDependencies": {
     "elapsed-time": "0.0.1",
     "eslint": "^6.8.0",
     "eslint-config-strongloop": "^2.1.0",
-    "jest": "^25.1.0",
-    "path": "^0.12.7",
-    "solc": "0.5.2"
+    "jest": "^25.1.0"
   }
 }
